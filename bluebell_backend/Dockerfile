@@ -24,7 +24,9 @@ RUN go build -o bluebell .
 ###################
 # 接下来创建一个小镜像
 ###################
-FROM debian:stretch-slim
+FROM debian:bullseye-slim AS runtime
+# 用更稳定的新版本
+
 
 COPY ./wait-for.sh /
 COPY ./conf /conf
@@ -32,10 +34,14 @@ COPY ./conf /conf
 # 从builder镜像中把可执行文件拷贝到当前目录
 COPY --from=builder /build/bluebell /
 
-RUN set -eux \
+RUN echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb http://archive.debian.org/debian-security stretch/updates main contrib non-free" >> /etc/apt/sources.list \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until \
     && apt-get update \
     && apt-get install -y --no-install-recommends netcat \
     && chmod 755 wait-for.sh
+
+
 
 # 需要运行的命令
 #ENTRYPOINT ["/bluebell", "conf/config.ini"]
